@@ -1,3 +1,4 @@
+import anthropic
 import streamlit as st
 import torch
 import torch.nn.functional as F
@@ -368,3 +369,35 @@ st.markdown("""
     ⚠️ For Research Purposes Only | Not for Clinical Use
 </div>
 """, unsafe_allow_html=True)
+# AI Medical Analysis
+st.divider()
+st.markdown("## 🤖 AI Medical Analysis")
+
+if st.button("Generate AI Medical Report"):
+    with st.spinner("Analyzing..."):
+        client = anthropic.Anthropic()
+        
+        prompt = f"""
+        Classification Results:
+        - Predicted Class: {CLASS_NAMES[pred_name]}
+        - Confidence: {confidence*100:.1f}%
+        - Risk Level: {RISK_LEVEL[pred_name]}
+        - Model: KD-EfficientNet
+        
+        All class probabilities:
+        {chr(10).join([f"- {CLASS_NAMES[CLASSES[i]]}: {probs[i].item()*100:.1f}%" for i in range(len(CLASSES))])}
+        
+        Please provide a structured medical analysis.
+        """
+        
+        message = client.messages.create(
+            model="claude-opus-4-20250514",
+            max_tokens=1024,
+            system="""You are an expert AI medical writer specializing in digital dermatology. 
+            Interpret classification outputs from DermaXAI system.
+            Generate structured summary with Findings, Explainability, and Differential Context.
+            ALWAYS start and end with: This is for research/educational purposes only and does not replace a certified dermatologist's clinical judgment.""",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        st.markdown(message.content[0].text)
