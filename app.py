@@ -22,7 +22,12 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 st.markdown("""
 <style>
 .stApp {
-    background: linear-gradient(135deg, #0a0e27 0%, #0d1b4b 50%, #0a1628 100%);
+    background: 
+        linear-gradient(135deg, rgba(10,14,39,0.85) 0%, rgba(13,27,75,0.85) 50%, rgba(10,22,40,0.85) 100%),
+        url('https://images.unsplash.com/photo-1576086213369-97a306d36557?w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: #e0e6ff;
 }
 .stApp::before {
