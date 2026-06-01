@@ -8,7 +8,7 @@ NUM_CLASSES = 8
 # Model 1: EfficientNet B0
 # ============================================
 def get_efficientnet():
-    model = models.efficientnet_b0(weights='IMAGENET1K_V1')
+    model = models.efficientnet_b0(weights=None)
     
     # Unfreeze last 3 blocks
     for name, param in model.named_parameters():
