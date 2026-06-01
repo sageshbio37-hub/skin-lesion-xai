@@ -205,13 +205,13 @@ if uploaded:
     img_resized = cv2.resize(img_np, (224, 224))
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    img_pil = Image.fromarray(img_resized.astype('uint8'), 'RGB')
-    img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
-    img_tensor.requires_grad_(True)
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+img_pil = Image.open(uploaded).convert('RGB')
+img_pil = img_pil.resize((224, 224))
+img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
 
     with torch.no_grad():
         output_prob = model(img_tensor.detach())
