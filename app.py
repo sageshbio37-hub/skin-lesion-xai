@@ -7,7 +7,15 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from PIL import Image
 from model import get_efficientnet
+import gdown
+import os
 
+# Download model weights if not present
+os.makedirs('data', exist_ok=True)
+if not os.path.exists('data/kd_efficientnet_best.pth'):
+    gdown.download('https://drive.google.com/uc?id=1hoeplrX5VCMkRhkb5zczr3GHuOTYyjCg', 'data/kd_efficientnet_best.pth', quiet=False)
+if not os.path.exists('data/vit_best.pth'):
+    gdown.download('https://drive.google.com/uc?id=1vWTc1l3zzSHZxlBD_qK_cgW8y_Duar4T', 'data/vit_best.pth', quiet=False)
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 CLASSES = ['MEL', 'NV', 'BCC', 'AK', 'BKL', 'DF', 'VASC', 'SCC']
 CLASS_NAMES = {
