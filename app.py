@@ -209,9 +209,10 @@ if uploaded:
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
-img_pil = Image.open(uploaded).convert('RGB')
-img_pil = img_pil.resize((224, 224))
-img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
+    img_pil = Image.open(uploaded).convert('RGB')
+    img_pil = img_pil.resize((224, 224))
+    img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
+
 
     with torch.no_grad():
         output_prob = model(img_tensor.detach())
