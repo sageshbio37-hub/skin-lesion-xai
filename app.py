@@ -200,9 +200,7 @@ uploaded = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'],
 
 if uploaded:
     model = load_model()
-    img = Image.open(uploaded).convert('RGB')
-    img_np = np.array(img)
-    img_resized = cv2.resize(img_np, (224, 224))
+    img_resized = np.array(Image.open(uploaded).convert('RGB').resize((224, 224)))
 
     transform = transforms.Compose([
     transforms.Resize((224, 224)),
