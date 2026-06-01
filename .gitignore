@@ -216,3 +216,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+data/ISIC_2019_Training_Input/
+data/*.jpg
+data/*.png
+*.pth
+__pycache__/
+*.pyc
