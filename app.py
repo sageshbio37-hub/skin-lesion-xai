@@ -17,6 +17,56 @@ if not os.path.exists('data/kd_efficientnet_best.pth'):
 if not os.path.exists('data/vit_best.pth'):
     gdown.download('https://drive.google.com/uc?id=1vWTc1l3zzSHZxlBD_qK_cgW8y_Duar4T', 'data/vit_best.pth', quiet=False)
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Professional Dark Blue Lab Theme
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(135deg, #0a0e27 0%, #0d1b4b 50%, #0a1628 100%);
+    color: #e0e6ff;
+}
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: 
+        radial-gradient(2px 2px at 10% 15%, #fff 0%, transparent 100%),
+        radial-gradient(2px 2px at 25% 40%, #aad4ff 0%, transparent 100%),
+        radial-gradient(1px 1px at 40% 10%, #fff 0%, transparent 100%),
+        radial-gradient(2px 2px at 55% 60%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 25%, #aad4ff 0%, transparent 100%),
+        radial-gradient(2px 2px at 80% 75%, #fff 0%, transparent 100%),
+        radial-gradient(1px 1px at 90% 45%, #fff 0%, transparent 100%),
+        radial-gradient(2px 2px at 15% 70%, #aad4ff 0%, transparent 100%),
+        radial-gradient(1px 1px at 35% 85%, #fff 0%, transparent 100%),
+        radial-gradient(2px 2px at 60% 90%, #fff 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+    animation: twinkle 4s infinite alternate;
+}
+@keyframes twinkle {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+h1, h2, h3 { color: #7eb3ff !important; text-shadow: 0 0 20px rgba(126,179,255,0.5); }
+div[data-testid="metric-container"] {
+    background: rgba(13,27,75,0.7) !important;
+    border: 1px solid #2a4db5 !important;
+    border-radius: 12px !important;
+    padding: 15px !important;
+}
+div[data-testid="stFileUploader"] {
+    background: rgba(13,27,75,0.5) !important;
+    border: 2px dashed #2a4db5 !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stExpander"] {
+    background: rgba(13,27,75,0.5) !important;
+    border: 1px solid #2a4db5 !important;
+    border-radius: 10px !important;
+}
+</style>
+""", unsafe_allow_html=True)
 CLASSES = ['MEL', 'NV', 'BCC', 'AK', 'BKL', 'DF', 'VASC', 'SCC']
 CLASS_NAMES = {
     'MEL': 'Melanoma',
