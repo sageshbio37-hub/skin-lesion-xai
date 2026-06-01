@@ -209,7 +209,7 @@ if uploaded:
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-    img_pil = Image.fromarray(img_resized)
+    img_pil = Image.fromarray(img_resized.astype('uint8'), 'RGB')
     img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
     img_tensor.requires_grad_(True)
 
