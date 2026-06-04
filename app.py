@@ -380,24 +380,14 @@ st.markdown("## 🤖 AI Medical Analysis")
 
 if st.button("Generate AI Medical Report"):
     with st.spinner("Analyzing..."):
-        import google.generativeai as genai
-        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        model_ai = genai.GenerativeModel("gemini-2.0-flash")
-        
-        prompt = f"""You are an expert AI medical writer specializing in digital dermatology.
-        
-        Classification Results:
-        - Predicted Class: {CLASS_NAMES[CLASSES[pred_class]]}
-        - Confidence: {confidence*100:.1f}%
-        - Risk Level: {RISK_LEVEL[pred_name]}
-        - Model: KD-EfficientNet
-        
-        Please provide a structured medical analysis with:
-        1. Findings Summary
-        2. Explainability Interpretation  
-        3. Differential Context
-        
-        IMPORTANT: Start and end with medical disclaimer."""
-        
-        response = model_ai.generate_content(prompt)
-        st.markdown(response.text)
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+            model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
+            response = model_ai.generate_content(prompt)
+            st.markdown(response.text)
+        except Exception as e:
+            if "quota" in str(e).lower() or "exhausted" in str(e).lower():
+                st.warning("⚠️ AI Analysis temporarily unavailable — Daily quota reached. Please try again tomorrow or upgrade to Gemini Pro.")
+            else:
+                st.error(f"Error: {str(e)}")
