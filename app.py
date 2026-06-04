@@ -396,7 +396,7 @@ if st.button("Generate AI Medical Report"):
         """
         
         message = client.messages.create(
-            model="claude-opus-4-20250514",
+            model="claude-sonnet-4-5",
             max_tokens=1024,
             system="""You are an expert AI medical writer specializing in digital dermatology. 
             Interpret classification outputs from DermaXAI system.
