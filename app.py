@@ -380,29 +380,24 @@ st.markdown("## 🤖 AI Medical Analysis")
 
 if st.button("Generate AI Medical Report"):
     with st.spinner("Analyzing..."):
-        client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+        import google.generativeai as genai
+        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        model_ai = genai.GenerativeModel("gemini-1.5-flash")
         
-        prompt = f"""
+        prompt = f"""You are an expert AI medical writer specializing in digital dermatology.
+        
         Classification Results:
         - Predicted Class: {CLASS_NAMES[CLASSES[pred_class]]}
         - Confidence: {confidence*100:.1f}%
         - Risk Level: {RISK_LEVEL[pred_name]}
         - Model: KD-EfficientNet
         
-        All class probabilities:
-        {chr(10).join([f"- {CLASS_NAMES[CLASSES[i]]}: {probs[i].item()*100:.1f}%" for i in range(len(CLASSES))])}
+        Please provide a structured medical analysis with:
+        1. Findings Summary
+        2. Explainability Interpretation  
+        3. Differential Context
         
-        Please provide a structured medical analysis.
-        """
+        IMPORTANT: Start and end with medical disclaimer."""
         
-        message = client.messages.create(
-            model="claude-sonnet-4-5",
-            max_tokens=1024,
-            system="""You are an expert AI medical writer specializing in digital dermatology. 
-            Interpret classification outputs from DermaXAI system.
-            Generate structured summary with Findings, Explainability, and Differential Context.
-            ALWAYS start and end with: This is for research/educational purposes only and does not replace a certified dermatologist's clinical judgment.""",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        
-        st.markdown(message.content[0].text)
+        response = model_ai.generate_content(prompt)
+        st.markdown(response.text)
