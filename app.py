@@ -380,7 +380,7 @@ st.markdown("## 🤖 AI Medical Analysis")
 
 if st.button("Generate AI Medical Report"):
     with st.spinner("Analyzing..."):
-        client = anthropic.Anthropic()
+        client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
         
         prompt = f"""
         Classification Results:
