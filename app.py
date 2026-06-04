@@ -251,8 +251,16 @@ st.divider()
 st.markdown("## 📤 Upload Dermoscopy Image")
 st.markdown("Upload a skin lesion image for AI analysis. Best results with dermoscopy images.")
 
-uploaded = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'],
-                             help="Supported formats: JPG, JPEG, PNG")
+tab1, tab2 = st.tabs(["📁 Upload Image", "📸 Live Camera"])
+
+with tab1:
+    uploaded = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'],
+                help="Supported formats: JPG, JPEG, PNG")
+
+with tab2:
+    camera_photo = st.camera_input("📸 Take a photo of skin lesion")
+    if camera_photo:
+        uploaded = camera_photo
 
 if uploaded:
     model = load_model()
