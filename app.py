@@ -384,7 +384,7 @@ if st.button("Generate AI Medical Report"):
         
         prompt = f"""
         Classification Results:
-        - Predicted Class: {CLASS_NAMES[pred_name]}
+        - Predicted Class: {CLASS_NAMES[CLASSES[pred_class]]}
         - Confidence: {confidence*100:.1f}%
         - Risk Level: {RISK_LEVEL[pred_name]}
         - Model: KD-EfficientNet
