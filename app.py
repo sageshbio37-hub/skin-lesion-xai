@@ -1,4 +1,3 @@
-import anthropic
 import streamlit as st
 import torch
 import torch.nn.functional as F
@@ -8,71 +7,21 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from PIL import Image
 from model import get_efficientnet
-import gdown
-import os
+from io import BytesIO
+import datetime
 
-# Download model weights if not present
-os.makedirs('data', exist_ok=True)
-if not os.path.exists('data/kd_efficientnet_best.pth'):
-    gdown.download('https://drive.google.com/uc?id=1hoeplrX5VCMkRhkb5zczr3GHuOTYyjCg', 'data/kd_efficientnet_best.pth', quiet=False)
-if not os.path.exists('data/vit_best.pth'):
-    gdown.download('https://drive.google.com/uc?id=1vWTc1l3zzSHZxlBD_qK_cgW8y_Duar4T', 'data/vit_best.pth', quiet=False)
+# PDF report generation
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle)
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# Professional Dark Blue Lab Theme
-st.markdown("""
-<style>
-.stApp {
-    background: 
-        linear-gradient(135deg, rgba(10,14,39,0.85) 0%, rgba(13,27,75,0.85) 50%, rgba(10,22,40,0.85) 100%),
-        url('https://images.unsplash.com/photo-1576086213369-97a306d36557?w=1920&q=80');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    color: #e0e6ff;
-}
-.stApp::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-image: 
-        radial-gradient(2px 2px at 10% 15%, #fff 0%, transparent 100%),
-        radial-gradient(2px 2px at 25% 40%, #aad4ff 0%, transparent 100%),
-        radial-gradient(1px 1px at 40% 10%, #fff 0%, transparent 100%),
-        radial-gradient(2px 2px at 55% 60%, #fff 0%, transparent 100%),
-        radial-gradient(1px 1px at 70% 25%, #aad4ff 0%, transparent 100%),
-        radial-gradient(2px 2px at 80% 75%, #fff 0%, transparent 100%),
-        radial-gradient(1px 1px at 90% 45%, #fff 0%, transparent 100%),
-        radial-gradient(2px 2px at 15% 70%, #aad4ff 0%, transparent 100%),
-        radial-gradient(1px 1px at 35% 85%, #fff 0%, transparent 100%),
-        radial-gradient(2px 2px at 60% 90%, #fff 0%, transparent 100%);
-    pointer-events: none;
-    z-index: 0;
-    animation: twinkle 4s infinite alternate;
-}
-@keyframes twinkle {
-    0% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-h1, h2, h3 { color: #7eb3ff !important; text-shadow: 0 0 20px rgba(126,179,255,0.5); }
-div[data-testid="metric-container"] {
-    background: rgba(13,27,75,0.7) !important;
-    border: 1px solid #2a4db5 !important;
-    border-radius: 12px !important;
-    padding: 15px !important;
-}
-div[data-testid="stFileUploader"] {
-    background: rgba(13,27,75,0.5) !important;
-    border: 2px dashed #2a4db5 !important;
-    border-radius: 12px !important;
-}
-div[data-testid="stExpander"] {
-    background: rgba(13,27,75,0.5) !important;
-    border: 1px solid #2a4db5 !important;
-    border-radius: 10px !important;
-}
-</style>
-""", unsafe_allow_html=True)
 CLASSES = ['MEL', 'NV', 'BCC', 'AK', 'BKL', 'DF', 'VASC', 'SCC']
 CLASS_NAMES = {
     'MEL': 'Melanoma',
@@ -251,30 +200,23 @@ st.divider()
 st.markdown("## 📤 Upload Dermoscopy Image")
 st.markdown("Upload a skin lesion image for AI analysis. Best results with dermoscopy images.")
 
-tab1, tab2 = st.tabs(["📁 Upload Image", "📸 Live Camera"])
-
-with tab1:
-    uploaded = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'],
-                help="Supported formats: JPG, JPEG, PNG")
-
-with tab2:
-    camera_photo = st.camera_input("📸 Take a photo of skin lesion")
-    if camera_photo:
-        uploaded = camera_photo
+uploaded = st.file_uploader("Choose an image...", type=['jpg', 'jpeg', 'png'],
+                             help="Supported formats: JPG, JPEG, PNG")
 
 if uploaded:
     model = load_model()
-    img_resized = np.array(Image.open(uploaded).convert('RGB').resize((224, 224)))
+    img = Image.open(uploaded).convert('RGB')
+    img_np = np.array(img)
+    img_resized = cv2.resize(img_np, (224, 224))
 
     transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-])
-    img_pil = Image.open(uploaded).convert('RGB')
-    img_pil = img_pil.resize((224, 224))
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+    img_pil = Image.fromarray(img_resized)
     img_tensor = transform(img_pil).unsqueeze(0).to(DEVICE)
-
+    img_tensor.requires_grad_(True)
 
     with torch.no_grad():
         output_prob = model(img_tensor.detach())
@@ -351,6 +293,182 @@ if uploaded:
     **Recommended Action:** {'⚠️ Seek immediate medical attention from a certified dermatologist.' if is_dangerous else '✅ Monitor the lesion regularly. Consult a doctor if you notice any changes in size, color, or shape.'}
     """)
 
+    st.divider()
+
+    # ── AI Medical Report (PDF) ─────────────────────────────────
+    st.markdown("### 🤖 AI Medical Analysis")
+
+    def generate_pdf_report():
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                rightMargin=40, leftMargin=40,
+                                topMargin=40, bottomMargin=40)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        story.append(Paragraph(
+            "DermaXAI — Clinical Diagnostic Report",
+            styles['Title']))
+        story.append(Paragraph(
+            f"Generated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            styles['Normal']))
+        story.append(Spacer(1, 16))
+
+        # Primary result
+        story.append(Paragraph("Primary Diagnosis", styles['Heading2']))
+        story.append(Paragraph(
+            f"<b>Detected:</b> {CLASS_NAMES[pred_name]} ({pred_name})",
+            styles['Normal']))
+        story.append(Paragraph(
+            f"<b>Confidence:</b> {confidence:.1%}",
+            styles['Normal']))
+        story.append(Paragraph(
+            f"<b>Risk Level:</b> {RISK_LEVEL[pred_name]}",
+            styles['Normal']))
+        story.append(Paragraph(
+            f"<b>Description:</b> {CLASS_DESC[pred_name]}",
+            styles['Normal']))
+        story.append(Paragraph(
+            f"<b>Recommended Action:</b> "
+            f"{'Seek immediate medical attention from a certified dermatologist.'if is_dangerous else 'Monitor the lesion regularly. Consult a doctor if you notice any changes in size, color, or shape.'}",
+            styles['Normal']))
+        story.append(Spacer(1, 16))
+
+        # Differential diagnosis table
+        story.append(Paragraph("Differential Diagnosis", styles['Heading2']))
+        sorted_probs = sorted(enumerate(probs),
+                              key=lambda x: x[1], reverse=True)
+        table_data = [["Rank", "Class", "Full Name", "Confidence"]]
+        for rank, (idx, prob) in enumerate(sorted_probs, 1):
+            cls = CLASSES[idx]
+            table_data.append([
+                str(rank),
+                cls,
+                CLASS_NAMES[cls],
+                f"{prob:.1%}"
+            ])
+        t = Table(table_data, colWidths=[35, 45, 220, 80])
+        t.setStyle(TableStyle([
+            ('BACKGROUND',   (0, 0), (-1, 0),  colors.HexColor('#0f3460')),
+            ('TEXTCOLOR',    (0, 0), (-1, 0),  colors.whitesmoke),
+            ('FONTNAME',     (0, 0), (-1, 0),  'Helvetica-Bold'),
+            ('FONTSIZE',     (0, 0), (-1, -1), 9),
+            ('GRID',         (0, 0), (-1, -1), 0.4, colors.grey),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+             [colors.white, colors.HexColor('#f0f4ff')]),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 16))
+
+        # Model info
+        story.append(Paragraph("Model Information", styles['Heading2']))
+        story.append(Paragraph(
+            "Model: KD-EfficientNet (Knowledge Distilled from ViT-B16 Teacher) | "
+            "Dataset: ISIC 2019 (25,333 images, 8 classes) | "
+            "Accuracy: 75.67% | F1: 0.7574 | Precision: 0.7621",
+            styles['Normal']))
+        story.append(Spacer(1, 16))
+
+        # Disclaimer
+        story.append(Paragraph("⚠️ Disclaimer", styles['Heading2']))
+        story.append(Paragraph(
+            "This report is generated by DermaXAI, an AI-powered research tool "
+            "developed at Arunai Engineering College, Tiruvannamalai, Tamil Nadu. "
+            "It is trained on the ISIC 2019 dataset and is intended for research "
+            "and educational purposes ONLY. This report does NOT constitute a "
+            "clinical diagnosis and must NOT replace consultation with a licensed "
+            "dermatologist or qualified medical professional. Always seek "
+            "professional medical advice for any skin concerns.",
+            styles['Italic']))
+        story.append(Spacer(1, 8))
+        story.append(Paragraph(
+            "DermaXAI | Sagesh B & Abhay Srinivas Y.S | "
+            "Arunai Engineering College | https://dramaxai.streamlit.app",
+            styles['Normal']))
+
+        doc.build(story)
+        buffer.seek(0)
+        return buffer
+
+    if REPORTLAB_AVAILABLE:
+        if st.button("📄 Generate AI Medical Report"):
+            with st.spinner("Generating PDF report..."):
+                pdf_buffer = generate_pdf_report()
+            st.success("✅ Report ready! Click below to download.")
+            st.download_button(
+                label="⬇️ Download Clinical Report (PDF)",
+                data=pdf_buffer,
+                file_name=f"DermaXAI_Report_{pred_name}_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                mime="application/pdf"
+            )
+    else:
+        st.warning("Install reportlab to enable PDF reports: `pip install reportlab`")
+
+st.divider()
+
+# ── Live Camera Section ─────────────────────────────────────────
+st.markdown("## 📷 Live Camera Capture")
+st.markdown("Capture a skin lesion image directly using your device camera.")
+
+camera_img = st.camera_input("Take a photo of the skin lesion")
+
+if camera_img is not None:
+    model = load_model()
+    img = Image.open(camera_img).convert('RGB')
+    img_np = np.array(img)
+    img_resized = cv2.resize(img_np, (224, 224))
+
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406],
+                             [0.229, 0.224, 0.225])
+    ])
+    img_tensor = transform(
+        Image.fromarray(img_resized)
+    ).unsqueeze(0).to(DEVICE)
+    img_tensor.requires_grad_(True)
+
+    with torch.no_grad():
+        output_prob = model(img_tensor.detach())
+        cam_probs = F.softmax(output_prob, dim=1)[0]
+
+    cam_heatmap, cam_overlay, cam_pred_class = \
+        generate_gradcam(model, img_tensor, img_resized)
+
+    cam_pred_name = CLASSES[cam_pred_class]
+    cam_confidence = cam_probs[cam_pred_class].item()
+    cam_is_dangerous = cam_pred_name in DANGEROUS
+
+    st.markdown("#### 🔍 Camera Analysis Results")
+    if cam_is_dangerous:
+        st.error(f"⚠️ **{CLASS_NAMES[cam_pred_name]}** — {RISK_LEVEL[cam_pred_name]} — Consult a dermatologist!")
+    else:
+        st.success(f"✅ **{CLASS_NAMES[cam_pred_name]}** — {RISK_LEVEL[cam_pred_name]} — Monitor for changes.")
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Prediction", CLASS_NAMES[cam_pred_name])
+    c2.metric("Confidence", f"{cam_confidence:.1%}")
+    c3.metric("Risk Level", RISK_LEVEL[cam_pred_name])
+
+    col1, col2, col3 = st.columns(3)
+    col1.image(img_resized,   caption="📸 Captured Image",      use_column_width=True)
+    col2.image(cam_heatmap,   caption="🌡️ Grad-CAM Heatmap",   use_column_width=True)
+    col3.image(cam_overlay,   caption="🔬 AI Attention Overlay", use_column_width=True)
+
+    st.info(f"""
+    **Detected:** {CLASS_NAMES[cam_pred_name]} ({cam_pred_name})
+
+    **Description:** {CLASS_DESC[cam_pred_name]}
+
+    **Risk Level:** {RISK_LEVEL[cam_pred_name]}
+
+    **Recommended Action:** {'⚠️ Seek immediate medical attention.' if cam_is_dangerous else '✅ Monitor regularly. Consult a doctor if changes occur.'}
+    """)
+
 else:
     # How to use guide
     st.markdown("### 🚀 How to use DermaXAI?")
@@ -382,20 +500,3 @@ st.markdown("""
     ⚠️ For Research Purposes Only | Not for Clinical Use
 </div>
 """, unsafe_allow_html=True)
-# AI Medical Analysis
-st.divider()
-st.markdown("## 🤖 AI Medical Analysis")
-
-if st.button("Generate AI Medical Report"):
-    with st.spinner("Analyzing..."):
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-            model_ai = genai.GenerativeModel("gemini-1.5-flash-latest")
-            response = model_ai.generate_content(prompt)
-            st.markdown(response.text)
-        except Exception as e:
-            if "quota" in str(e).lower() or "exhausted" in str(e).lower():
-                st.warning("⚠️ AI Analysis temporarily unavailable — Daily quota reached. Please try again tomorrow or upgrade to Gemini Pro.")
-            else:
-                st.error(f"Error: {str(e)}")
