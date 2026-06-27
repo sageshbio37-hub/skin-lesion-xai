@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from PIL import Image
 from model import get_efficientnet
-from io import
+from io import BytesIO
 import datetime
 
 # PDF report generation
