@@ -54,6 +54,8 @@ RISK_LEVEL = {
     'DF': '🟢 Low Risk',
     'VASC': '🟢 Low Risk'
 }
+gradients = []
+activations = []
 
 @st.cache_resource
 def load_model():
