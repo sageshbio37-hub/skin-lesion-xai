@@ -62,7 +62,7 @@ def load_model():
     model_path = 'data/kd_efficientnet_best.pth'
     if not os.path.exists(model_path):
         import gdown
-        url = 'https://drive.google.com/uc?id=1vWTc1l3zzSHZxlBD_qK_cgW8y_Duar4T'
+        url = 'https://drive.google.com/uc?id=1hoeplrX5VCMkRhkb5zczr3GHuOTYyjCg'
         gdown.download(url, model_path, quiet=False)
     model = get_efficientnet()
     model.load_state_dict(torch.load(model_path, map_location=DEVICE))
