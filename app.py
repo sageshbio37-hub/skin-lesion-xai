@@ -57,14 +57,18 @@ RISK_LEVEL = {
 
 @st.cache_resource
 def load_model():
+    import os
+    os.makedirs('data', exist_ok=True)
+    model_path = 'data/kd_efficientnet_best.pth'
+    if not os.path.exists(model_path):
+        import gdown
+        url = 'https://drive.google.com/uc?id=YOUR_FILE_ID'
+        gdown.download(url, model_path, quiet=False)
     model = get_efficientnet()
-    model.load_state_dict(torch.load('data/kd_efficientnet_best.pth', map_location=DEVICE))
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
     model = model.to(DEVICE)
     model.eval()
     return model
-
-gradients = []
-activations = []
 
 def backward_hook(module, grad_input, grad_output):
     gradients.append(grad_output[0])
