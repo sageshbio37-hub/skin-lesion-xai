@@ -261,7 +261,7 @@ if uploaded:
     col1, col2, col3 = st.columns(3)
     with col1:
         st.markdown("**📸 Original Image**")
-        st.image(image, use_container_width=True)
+        st.image(img_resized, use_container_width=True)
         st.caption("input dermoscopy image")
     with col2:
         st.markdown("**🌡️ Grad-CAM Heatmap**")
