@@ -57,6 +57,7 @@ RISK_LEVEL = {
 gradients = []
 activations = []
 
+
 @st.cache_resource
 def load_model():
     import os
@@ -72,18 +73,23 @@ def load_model():
     model.eval()
     return model
 
+
 def backward_hook(module, grad_input, grad_output):
     gradients.append(grad_output[0])
 
+
 def forward_hook(module, input, output):
     activations.append(output)
+
 
 def generate_gradcam(model, img_tensor, img_display):
     gradients.clear()
     activations.clear()
     target_layer = model.features[-1]
     h1 = target_layer.register_forward_hook(forward_hook)
-    h2 = target_layer.register_backward_hook(backward_hook)
+    # register_full_backward_hook is the modern, non-deprecated replacement
+    # for register_backward_hook.
+    h2 = target_layer.register_full_backward_hook(backward_hook)
     output = model(img_tensor)
     pred_class = output.argmax().item()
     model.zero_grad()
@@ -103,6 +109,7 @@ def generate_gradcam(model, img_tensor, img_display):
     h1.remove()
     h2.remove()
     return heatmap, overlay, pred_class
+
 
 # Page config
 st.set_page_config(page_title="DermaXAI", page_icon="🔬", layout="wide")
@@ -265,11 +272,11 @@ if uploaded:
         st.caption("input dermoscopy image")
     with col2:
         st.markdown("**🌡️ Grad-CAM Heatmap**")
-        st.image(heatmap, use_column_width=True)
+        st.image(heatmap, use_container_width=True)
         st.caption("🔴 Red = AI focus area | 🔵 Blue = Low attention")
     with col3:
         st.markdown("**🔬 AI Attention Overlay**")
-        st.image(overlay, use_column_width=True)
+        st.image(overlay, use_container_width=True)
         st.caption("Heatmap overlaid on original image")
 
     st.divider()
@@ -291,11 +298,11 @@ if uploaded:
     st.markdown("### 🏥 Clinical Information")
     st.info(f"""
     **Detected:** {CLASS_NAMES[pred_name]} ({pred_name})
-    
+
     **Description:** {CLASS_DESC[pred_name]}
-    
+
     **Risk Level:** {RISK_LEVEL[pred_name]}
-    
+
     **Recommended Action:** {'⚠️ Seek immediate medical attention from a certified dermatologist.' if is_dangerous else '✅ Monitor the lesion regularly. Consult a doctor if you notice any changes in size, color, or shape.'}
     """)
 
@@ -337,7 +344,7 @@ if uploaded:
             styles['Normal']))
         story.append(Paragraph(
             f"<b>Recommended Action:</b> "
-            f"{'Seek immediate medical attention from a certified dermatologist.'if is_dangerous else 'Monitor the lesion regularly. Consult a doctor if you notice any changes in size, color, or shape.'}",
+            f"{'Seek immediate medical attention from a certified dermatologist.' if is_dangerous else 'Monitor the lesion regularly. Consult a doctor if you notice any changes in size, color, or shape.'}",
             styles['Normal']))
         story.append(Spacer(1, 16))
 
@@ -461,9 +468,9 @@ if camera_img is not None:
     c3.metric("Risk Level", RISK_LEVEL[cam_pred_name])
 
     col1, col2, col3 = st.columns(3)
-    col1.image(img_resized,   caption="📸 Captured Image",      use_column_width=True)
-    col2.image(cam_heatmap,   caption="🌡️ Grad-CAM Heatmap",   use_column_width=True)
-    col3.image(cam_overlay,   caption="🔬 AI Attention Overlay", use_column_width=True)
+    col1.image(img_resized,  caption="📸 Captured Image",       use_container_width=True)
+    col2.image(cam_heatmap,  caption="🌡️ Grad-CAM Heatmap",    use_container_width=True)
+    col3.image(cam_overlay,  caption="🔬 AI Attention Overlay", use_container_width=True)
 
     st.info(f"""
     **Detected:** {CLASS_NAMES[cam_pred_name]} ({cam_pred_name})
@@ -476,33 +483,37 @@ if camera_img is not None:
     """)
 
 else:
-    # How to use guide
-    st.markdown("### 🚀 How to use DermaXAI?")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown("""
-        #### Step 1️⃣
-        **Upload Image**
-        Upload a clear dermoscopy or skin lesion image in JPG/PNG format
-        """)
-    with col2:
-        st.markdown("""
-        #### Step 2️⃣
-        **AI Analysis**
-        Our KD-EfficientNet model analyzes the image and generates Grad-CAM visualization
-        """)
-    with col3:
-        st.markdown("""
-        #### Step 3️⃣
-        **Review Results**
-        Check prediction, confidence score, heatmap and clinical information
-        """)
+    # How-to-use guide — only shown when the user hasn't uploaded an
+    # image AND hasn't used the camera (the true "empty state").
+    # Previously this was attached only to the camera_img check, so it
+    # kept showing underneath a completed upload analysis too.
+    if not uploaded:
+        st.markdown("### 🚀 How to use DermaXAI?")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("""
+            #### Step 1️⃣
+            **Upload Image**
+            Upload a clear dermoscopy or skin lesion image in JPG/PNG format
+            """)
+        with col2:
+            st.markdown("""
+            #### Step 2️⃣
+            **AI Analysis**
+            Our KD-EfficientNet model analyzes the image and generates Grad-CAM visualization
+            """)
+        with col3:
+            st.markdown("""
+            #### Step 3️⃣
+            **Review Results**
+            Check prediction, confidence score, heatmap and clinical information
+            """)
 
 # Footer
 st.markdown("""
 <div class="footer">
     🔬 DermaXAI | Knowledge Distillation from ViT to EfficientNet with Grad-CAM Explainability<br>
-    Sagesh S & Abhay Srinivas Y.S | Arunai Engineering College | ISIC 2019 Dataset<br>
+    Sagesh S & Shawn Sherwin geni g m | Arunai Engineering College | ISIC 2019 Dataset<br>
     ⚠️ For Research Purposes Only | Not for Clinical Use
 </div>
 """, unsafe_allow_html=True)
